@@ -1,0 +1,29 @@
+# Argo CD can also deploy a chart straight from a Helm repository,
+# with no Git repo of your own: the values live in the Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: podinfo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  project: default
+  source:
+    repoURL: https://stefanprodan.github.io/podinfo
+    chart: podinfo            # `chart` instead of `path` for a Helm repository
+    targetRevision: 6.*       # chart version; a range is allowed, an exact pin is safer
+    helm:
+      valuesObject:
+        replicaCount: 2
+        ui:
+          message: "Deployed by Argo CD from a Helm repo"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: podinfo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

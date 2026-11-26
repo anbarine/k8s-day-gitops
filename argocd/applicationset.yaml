@@ -1,0 +1,45 @@
+# An ApplicationSet generates one Application per element of a generator.
+# Here: the same chart, deployed twice, with different values files.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hello-web
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            valuesFile: values.yaml
+          - env: staging
+            valuesFile: values.yaml
+          - env: prod
+            valuesFile: values-prod.yaml
+  template:
+    metadata:
+      name: "hello-web-{{ .env }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io/foreground
+    spec:
+      project: default
+      source:
+        # TODO: replace with YOUR repository.
+        repoURL: https://github.com/anbarine/k8s-day-gitops.git
+        targetRevision: main
+        path: hello-web
+        helm:
+          releaseName: hello-web
+          valueFiles:
+            - values.yaml
+            - "{{ .valuesFile }}"   # later files override earlier ones
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "hello-{{ .env }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

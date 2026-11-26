@@ -1,0 +1,30 @@
+# One Argo CD Application = "keep this path of this Git repo deployed to this namespace".
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hello-web-dev
+  # Applications always live in Argo CD's own namespace, whatever they deploy to.
+  namespace: argocd
+  # Deleting the Application also deletes the Kubernetes objects it created.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  project: default
+  source:
+    # TODO: replace with YOUR repository (public, so no credentials are needed).
+    repoURL: https://github.com/anbarine/k8s-day-gitops.git
+    targetRevision: main
+    path: hello-web            # folder holding Chart.yaml: Argo CD detects a Helm chart
+    helm:
+      releaseName: hello-web
+      valueFiles:
+        - values.yaml          # relative to `path`
+  destination:
+    server: https://kubernetes.default.svc   # "the cluster Argo CD runs in"
+    namespace: hello-dev
+  syncPolicy:
+    automated:
+      prune: true      # delete objects that disappeared from Git
+      selfHeal: true   # undo changes made directly in the cluster
+    syncOptions:
+      - CreateNamespace=true

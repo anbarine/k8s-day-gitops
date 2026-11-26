@@ -1,0 +1,22 @@
+# Values for the official argo/argo-cd Helm chart, tuned for a local kind cluster.
+# Install with:
+#   helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace \
+#     --version <chart-version> -f argocd/values.yaml --wait
+
+# One replica of everything: fine for a laptop, not for production (see the HA slide).
+global:
+  domain: localhost
+
+configs:
+  cm:
+    # How often Argo CD polls Git. The default is 180s; 30s keeps the lab snappy.
+    # In production, use a Git webhook instead of a short polling interval.
+    timeout.reconciliation: 30s
+
+# SSO (Dex) is not needed: we log in with the local admin account.
+dex:
+  enabled: false
+
+# Notifications are out of scope for this lesson.
+notifications:
+  enabled: false

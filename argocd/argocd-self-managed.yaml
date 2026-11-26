@@ -1,0 +1,32 @@
+# Stretch goal: Argo CD manages its own installation.
+# The chart comes from the Helm repository, the values from YOUR Git repo
+# (commit argocd/values.yaml there first). Upgrading Argo CD = changing
+# targetRevision in a pull request.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  # No resources-finalizer here on purpose: deleting this Application
+  # must NOT uninstall Argo CD.
+spec:
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.20.0          # same chart version you installed with Helm
+      helm:
+        releaseName: argocd            # same release name, so Argo CD adopts the existing objects
+        valueFiles:
+          - $values/argocd/values.yaml # "$values" = the source below with ref: values
+    - repoURL: https://github.com/anbarine/k8s-day-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true                   # no prune: too risky on Argo CD itself
+    syncOptions:
+      - ServerSideApply=true           # Argo CD's CRDs are too big for client-side apply
